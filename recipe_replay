@@ -1,0 +1,20 @@
+#!/bin/zsh 
+
+# RecipeReplay Script
+# Usage: recipe_replay <instagram_url> 
+
+# Checking correct number of arguments 
+if [[ $# -ne 1 ]]; then 
+    echo "Usage: recipe_replay <instagram_url>" 
+    exit 1 
+fi 
+
+# Activating Environment 
+VENV_PATH="./env/bin/activate" 
+source $VENV_PATH
+
+# Run program 
+python3 ./recipe_replay.py $1 
+
+# Deactivate Environment 
+deactivate 

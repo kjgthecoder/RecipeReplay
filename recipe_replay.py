@@ -10,6 +10,7 @@ import requests
 import sys
 
 
+
 load_dotenv('keys.env') 
 
 OPENAI_KEY = os.environ.get('SECRET_KEY') 
@@ -80,6 +81,8 @@ def speech_to_text_whisper(audio_path):
     )
 
     if transcription: 
+        with open('transcription.txt', 'w') as file: 
+            file.write(transcription.text) 
         return transcription.text
     
 def summarize_steps(instructions): 
@@ -87,7 +90,10 @@ def summarize_steps(instructions):
         model="gpt-3.5-turbo", 
         messages=[
             {"role": "system", "content": "You're an at-home-chef assistant, skilled in formatting & summarizing instructions for cooking different dishes."}, 
-            {"role": "user", "content": f"Could you format & summarize these instructions for cooking this meal: {instructions}"}
+            {"role": "user", "content": f"""Could you format & summarize these instructions for cooking this meal in a markdown format: {instructions}\n\n
+                                            I need you to have 2 sections, Ingredients & Instructions. If the amount of an ingredient is metioned, make
+                                            sure to mention that in the ingredient section. If the temperature for a cooking appliance is stated, 
+                                            be sure to include that as well. Thank you."""}
         ]
     )
 
@@ -108,7 +114,7 @@ def main(instagram_url):
     audio_path = video_to_audio(video_path)
     transcription = speech_to_text_whisper(audio_path) 
     instructions = summarize_steps(transcription)
-    # write_instructions_to_markdown(instructions) 
+    write_instructions_to_markdown(instructions) 
     os.remove(video_path)
     os.remove(audio_path)
     print(instructions.content)
