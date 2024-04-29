@@ -1,4 +1,8 @@
 # RecipeReplay
+--- 
+
+![RecipeReplay Usage](./RR_Terminal.png)
+
 
 ## Introduction
 Welcome to RecipeReplay! This project is inspired by my recent culinary adventures. Since graduating college, I've had more time to explore my passions, one of which is cooking. I found myself frequently learning from online videos but was frustrated by the constant need to pause, rewind, and fast-forward, which disrupted the flow of cooking. To streamline this process, I created RecipeReplay, a tool that converts cooking videos into easy-to-follow written recipes.
@@ -28,5 +32,8 @@ To run RecipeReplay, you'll need:
 
 ### Usage
 To use RecipeReplay, simply run the provided Zsh script with the Instagram video URL: 
-![RecipeReplay Usage](./RR_Terminal.png)
+   ```bash
+   recipe_replay <instagram_url>
+   ```
+
 ![RecipeReplay Results](./RR_Result_Notion.png)
