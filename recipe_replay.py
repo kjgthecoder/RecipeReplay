@@ -21,7 +21,7 @@ client = OpenAI(api_key=OPENAI_KEY)
 async def download_instagram_video(instagram_url: str): 
     async with async_playwright() as playwright: 
         firefox = playwright.firefox
-        browser = await firefox.launch(headless=False) 
+        browser = await firefox.launch(headless=True) 
         page = await browser.new_page() 
         await page.goto("https://snapinsta.app/") 
 
@@ -81,8 +81,8 @@ def speech_to_text_whisper(audio_path):
     )
 
     if transcription: 
-        with open('transcription.txt', 'w') as file: 
-            file.write(transcription.text) 
+        # with open('transcription.txt', 'w') as file: 
+        #     file.write(transcription.text) 
         return transcription.text
     
 def summarize_steps(instructions): 
