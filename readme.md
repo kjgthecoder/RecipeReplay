@@ -35,5 +35,5 @@ To use RecipeReplay, simply run the provided Zsh script with the Instagram video
    ```bash
    recipe_replay <instagram_url>
    ```
-
+### Results
 ![RecipeReplay Results](./RR_Result_Notion.png)
