@@ -16,5 +16,10 @@ source $VENV_PATH
 # Run program 
 python3 ./recipe_replay.py $1 
 
+# Delete video & audio files 
+rm -r *.wav
+rm -r *.mp3 
+rm -r *.mp4
+
 # Deactivate Environment 
 deactivate 

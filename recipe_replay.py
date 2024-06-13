@@ -6,8 +6,11 @@ from moviepy.editor import VideoFileClip
 from openai import OpenAI
 import os 
 from playwright.async_api import async_playwright 
+from pydub import AudioSegment
 import requests 
 import sys
+import tiktoken 
+import yt_dlp 
 
 
 
@@ -15,6 +18,7 @@ load_dotenv('keys.env')
 
 OPENAI_KEY = os.environ.get('SECRET_KEY') 
 client = OpenAI(api_key=OPENAI_KEY)
+GPT_TURBO_MAX_TOKENS = 4096
 # instagram_video = "https://www.instagram.com/reel/C272uxmAVe3/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA=="
 
 # STEP 1: DOWNLOAD IG VIDEO 
@@ -46,7 +50,20 @@ async def download_instagram_video(instagram_url: str):
     else: 
         print("Error download video")
         return None 
-        
+
+def download_youtube_video(youtube_url: str): 
+    video_path = './video.mp4'
+    
+    ydl_options = { 
+        'format': 'best', 
+        'outtmpl': video_path
+    }
+
+    with yt_dlp.YoutubeDL(ydl_options) as ydl: 
+        ydl.download([cooking_url])
+
+    return video_path
+
 # STEP 2: CONVERT FROM VIDEO TO AUDIO 
 def video_to_audio(video_file: str): 
     """
@@ -66,11 +83,38 @@ def video_to_audio(video_file: str):
     print(f"video_to_audio(videio_file: {video_file})")
     audio_path = "./output_audio.wav" 
 
+
     video = VideoFileClip(video_file) 
     audio = video.audio 
     audio.write_audiofile(audio_path, codec="pcm_s16le") # Needed to convert to .wav fil
+    file_size = os.path.getsize(audio_path)
+
+    if file_size > 26214400: 
+        audio_path = compress_audio(audio_path)
+
     print(f"video_to_audio[audio_path: {audio_path}])")
     return audio_path 
+
+def compress_audio(audio_file: str): 
+    """
+    Compresses .wav file to a .mp3 file. This is done to compress the size of the file, 
+    so that it will hopefully work with OpenAI's Whisper API .
+
+    Args: 
+        audio_file (str): The path to the audio file to be compressed. This path can 
+        be either absolute or relative. 
+
+    Returns: 
+        The path to audio_file. Also saves the audio to the directory. 
+    """
+    mp3_path = "./audio.mp3"
+
+    audio = AudioSegment.from_wav(audio_file)
+
+    audio.export(mp3_path, format='mp3', bitrate='64k') 
+
+    return mp3_path  
+
 
 # STEP 3: TRANSCRIBE AUDIO TO TEXT 
 def speech_to_text_whisper(audio_path): 
@@ -86,19 +130,34 @@ def speech_to_text_whisper(audio_path):
         return transcription.text
     
 def summarize_steps(instructions): 
-    completion = client.chat.completions.create(
-        model="gpt-3.5-turbo", 
-        messages=[
-            {"role": "system", "content": "You're an at-home-chef assistant, skilled in formatting & summarizing instructions for cooking different dishes."}, 
-            {"role": "user", "content": f"""Could you format & summarize these instructions for cooking this meal in a markdown format: {instructions}\n\n
-                                            I need you to have 2 sections, Ingredients & Instructions. If the amount of an ingredient is metioned, make
-                                            sure to mention that in the ingredient section. If the temperature for a cooking appliance is stated, 
-                                            be sure to include that as well. Thank you."""}
-        ]
-    )
+    prompt_tokens = count_tokens(instructions)
 
-    if completion: 
-        return completion.choices[0].message 
+    if prompt_tokens < GPT_TURBO_MAX_TOKENS: 
+        completion = client.chat.completions.create(
+            model="gpt-3.5-turbo", 
+            messages=[
+                {"role": "system", "content": "You're an at-home-chef assistant, skilled in formatting & summarizing instructions for cooking different dishes."}, 
+                {"role": "user", "content": f"""Could you format & summarize these instructions for cooking this meal in a markdown format: {instructions}\n\n
+                                                I need you to have 2 sections, Ingredients & Instructions. If the amount of an ingredient is metioned, make
+                                                sure to mention that in the ingredient section. If the temperature for a cooking appliance is stated, 
+                                                be sure to include that as well. Thank you."""}
+            ]
+        )
+
+        if completion: 
+            return completion.choices[0].message 
+    else: 
+        return "Prompt is too large to use with OpenAI's GPT API."
+    
+def count_tokens(instructions): 
+    prompt = """Could you format & summarize these instructions for cooking this meal in a markdown format: {instructions}\n\n
+                I need you to have 2 sections, Ingredients & Instructions. If the amount of an ingredient is metioned, make
+                sure to mention that in the ingredient section. If the temperature for a cooking appliance is stated, 
+                be sure to include that as well. Thank you."""
+    encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
+    num_tokens = len(encoding.encode(prompt))
+
+    return num_tokens 
 
 def write_instructions_to_markdown(instructions): 
     instructions = instructions.content 
@@ -109,10 +168,12 @@ def write_instructions_to_markdown(instructions):
     
     print(f"Content saved to {file_name}")
 
-def main(instagram_url): 
-    video_path = asyncio.run(download_instagram_video(instagram_url))
+def main(cooking_url): 
+    # video_path = asyncio.run(download_instagram_video(cooking_url))
+    video_path = download_youtube_video(cooking_url) 
     audio_path = video_to_audio(video_path)
     transcription = speech_to_text_whisper(audio_path) 
+    # print(f'transcription length: {len(transcription)}') 
     instructions = summarize_steps(transcription)
     write_instructions_to_markdown(instructions) 
     os.remove(video_path)
@@ -122,7 +183,7 @@ def main(instagram_url):
 
 if __name__ == '__main__':
     if len(sys.argv) < 2: 
-        print("Usage: python3 recipe_replay.py <instagram_url>")
+        print("Usage: python3 recipe_replay.py <cooking_url>")
     else: 
-        instagram_url = sys.argv[1] 
-        main(instagram_url)
+        cooking_url = sys.argv[1] 
+        main(cooking_url)
