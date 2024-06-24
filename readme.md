@@ -39,4 +39,4 @@ To use RecipeReplay, simply run the provided Zsh script with the Instagram video
 ![RecipeReplay Results](./RR_Result_Notion.png)
 
 ### Future Imporovements 
-Right now, this only works with Instagram Reels. Would like to improve this in the future to include YouTube Shorts & TikToks. 
+Right now, this only works with Instagram Reels & YouTube videos. Would like to improve this in the future to include TikToks. 
